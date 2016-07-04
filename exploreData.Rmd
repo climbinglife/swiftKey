@@ -1,0 +1,117 @@
+---
+title: "Exploratory analysis of SwiftKey dataset"
+author: "Jincheng Wu"
+date: "June 14, 2016"
+output: html_document
+---
+
+#### 1. Load SwiftKey data and inspect number of lines
+```{r, cache=TRUE, warning=FALSE}
+library(plyr)
+library(tm)
+# Point this to the folder containing unzipped training data
+datapath <- "D:/Coursera/capstone project/final"
+
+twitter <- readLines(paste(datapath,"en_US/en_US.twitter.txt", sep="/"), encoding="UTF-8")
+news <- readLines(paste(datapath,"en_US/en_US.news.txt", sep="/"), encoding="UTF-8")
+blogs <- readLines(paste(datapath,"en_US/en_US.blogs.txt", sep="/"), encoding="UTF-8")
+all_en <- list(twitter, news, blogs)
+samples <- c("twitter","news","blogs")
+line_count <- data.frame(sapply(all_en, length))
+colnames(line_count) <- "number_of_line"
+rownames(line_count) <- samples
+```
+#### Number of lines in each file
+
+`r knitr::kable(line_count)`
+
+#### 2. Length distribution of sentence in each file
+```{r, warning=FALSE}
+library(stringi)
+twitter_count <- sapply(twitter, stri_count_words)
+hist(twitter_count, main="Sentence length in twitter data", xlab="Number of words")
+news_count <- sapply(news, stri_count_words)
+hist(news_count, main="Sentence length in news data", xlab="Number of words")
+blogs_count <- sapply(blogs, stri_count_words)
+hist(blogs_count, main="Sentence length in blogs data", xlab="Number of words")
+```
+
+#### 3. Histogram of unique word count
+```{r, echo=FALSE, cache=TRUE}
+library(ggplot2)
+# combine all 3 datasets
+all_en <- c(twitter, news, blogs)
+
+text <- paste(all_en, collapse=" ")
+en_source <- VectorSource(text)
+corpus <- Corpus(en_source)
+# transform word all into lower case
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, stripWhitespace)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+
+
+dtm <- DocumentTermMatrix(corpus)
+dtm2 <- as.matrix(dtm)
+frequency <- colSums(dtm2)
+frequency <- sort(frequency, decreasing=TRUE)
+p1 <- qplot(frequency, geom="histogram") + scale_x_log10() 
+p1 <- p1 + labs(title="Histogram for Work Frequency") + labs(x="Work Frequency", y="Count")
+p1
+
+# remove common words
+corpus2 <- tm_map(corpus, removeWords, stopwords("english"))
+dtm <- DocumentTermMatrix(corpus2)
+dtm2 <- as.matrix(dtm)
+frequency2 <- colSums(dtm2)
+frequency2 <- sort(frequency2, decreasing=TRUE)
+head(frequency2)
+p2 <- qplot(frequency2, bins=25, geom="histogram") + scale_x_log10() 
+p2 <- p2 + labs(title="Histogram for Work Frequency (common words excluded)") + labs(x="Work Frequency", y="Count")
+p2
+```
+
+Most frequent words with common words excluded:
+
+`r knitr:::kable(head(frequency2, 10))`
+
+#### 4. Visualize most frequent words in word cloud
+```{r, warning=FALSE}
+library(wordcloud)
+words <- names(frequency2)
+wordcloud(words[1:100], frequency2[1:100])
+
+options(java.parameters = "-Xmx4096m")
+library(RWeka)
+
+tdm_generate<-function(clean_corpus,n){
+  Tokenizer <- function(x) NGramTokenizer(x, Weka_control(min = n, max = n)) 
+  tdm <- TermDocumentMatrix(clean_corpus, control = list(tokenize = Tokenizer))
+}
+
+set.seed(27)
+sample_blogs <- blogs[sample(1:length(blogs),20000)]
+sample_news <- news[sample(1:length(news),20000)]
+sample_twitter <- twitter[sample(1:length(twitter),20000)]
+sample_list <- c(sample_twitter,sample_news,sample_blogs)
+text <- paste(sample_list, collapse=" ")
+
+writeLines(sample_list, paste(datapath, "sample.txt", sep="/"))
+
+sample <- readLines(paste(datapath,"sample.txt",sep="/"), encoding="UTF-8")
+sample_size=round(file.info("sample.txt")$size/1024^2,2)
+sample_length=length(sample)
+sample_words=sum(stri_count_words(sample))
+
+corpus = Corpus(VectorSource(text)) 
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, stripWhitespace)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+uni_tdm <- tdm_generate(corpus,1)
+bi_tdm  <- tdm_generate(corpus,2)
+tri_tdm <- tdm_generate(corpus,3)
+```
