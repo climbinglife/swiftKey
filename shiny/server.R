@@ -1,10 +1,10 @@
 library(shiny)
 
 # Load prediction model function
-source("D:/Coursera/capstone project/swiftKey/simpleModel.R")
+source("./simpleModel.R")
 
 # Load word frequency matrix
-load("D:/Coursera/capstone project/swiftKey/temp/frequency_matrix.RData")
+load("./temp/frequency_matrix.RData")
 
 shinyServer(
   function(input, output) {

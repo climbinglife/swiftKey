@@ -1,8 +1,8 @@
 # Load prediction model function
-source("D:/Coursera/capstone project/swiftKey/simpleModel.R")
+source("./shiny/simpleModel.R")
 
 # Load word frequency matrix
-load("D:/Coursera/capstone project/swiftKey/temp/frequency_matrix.RData")
+load("./shiny/temp/frequency_matrix.RData")
 
 # Quiz 1
 test <- c()
