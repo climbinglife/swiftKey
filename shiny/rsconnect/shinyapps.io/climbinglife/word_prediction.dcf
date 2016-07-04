@@ -1,0 +1,9 @@
+name: word_prediction
+account: climbinglife
+server: shinyapps.io
+appId: 112359
+bundleId: 496208
+url: https://climbinglife.shinyapps.io/word_prediction/
+when: 1467650400.796
+asMultiple: FALSE
+asStatic: FALSE
